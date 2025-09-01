@@ -1233,84 +1233,11 @@ const openSpotify = (spotifyUrl) => {
     }
 };
 
-    // --- FUNÇÃO CORRIGIDA (v6) ---
-    // Abre um modal para o usuário controlar a rotina de viagem
     const startRoutine = () => {
-        const destinationInput = document.getElementById('nav-destination');
-        const destination = destinationInput ? destinationInput.value : "";
-
-        // Conteúdo do modal com os botões para cada etapa da rotina
-        const modalContent = `
-            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
-                <h2 class="text-xl font-bold mb-4 text-white">Rotina de Viagem</h2>
-                <p class="text-gray-300 mb-5 text-sm">Por favor, inicie cada etapa manualmente. Após abrir um app, volte aqui para continuar.</p>
-                <div class="space-y-3">
-                    <button id="routine-step1-nav" class="w-full text-left p-3 bg-gray-700/70 hover:bg-gray-600/70 rounded-lg transition-colors flex items-center gap-3">
-                        <span class="font-bold text-teal-400 text-lg">1.</span>
-                        <div>
-                            <span class="font-semibold text-white">Iniciar Navegação</span>
-                            ${destination ? `<p class="text-xs text-gray-400">Destino: ${destination}</p>` : ''}
-                        </div>
-                    </button>
-                    <button id="routine-step2-home" class="w-full text-left p-3 bg-gray-700/70 hover:bg-gray-600/70 rounded-lg transition-colors flex items-center gap-3">
-                        <span class="font-bold text-teal-400 text-lg">2.</span>
-                        <span class="font-semibold text-white">Abrir o Google Home</span>
-                    </button>
-                    <button id="routine-step3-spotify" class="w-full text-left p-3 bg-gray-700/70 hover:bg-gray-600/70 rounded-lg transition-colors flex items-center gap-3">
-                        <span class="font-bold text-teal-400 text-lg">3.</span>
-                        <span class="font-semibold text-white">Abrir o Spotify</span>
-                    </button>
-                </div>
-                <div class="mt-6">
-                    <button type="button" id="modal-close-btn" class="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Fechar</button>
-                </div>
-            </div>
-        `;
-
-        // Exibe o modal na tela
-        UI.genericModal.innerHTML = modalContent;
-        UI.genericModal.classList.remove('hidden');
-
-        // Adiciona os eventos de clique para cada botão da rotina
-        document.getElementById('routine-step1-nav').onclick = () => {
-            startNavigation();
-        };
-        
-        // --- CÓDIGO REVERTIDO PARA A OPÇÃO NATIVA ---
-        document.getElementById('routine-step2-home').onclick = () => {
-    window.location.href = "intent://launch/#Intent;package=com.google.android.apps.chromecast.app;end";
-
+    window.location.href = "intent://scan/#Intent;scheme=googlehome;package=com.google.android.apps.chromecast.app;end";
 };
 
-        
-        document.getElementById('routine-step3-spotify').onclick = () => {
-            playOnSpotify();
-        };
-        
-        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
-    };
 
-
-
-
-
-
-
-    const requestBluetoothConnection = async () => {
-        if (!navigator.bluetooth) {
-            console.log('Bluetooth não é compatível com este navegador.');
-            return;
-        }
-        try {
-            const device = await navigator.bluetooth.requestDevice({
-                acceptAllDevices: true,
-                optionalServices: ['generic_access']
-            });
-            showToast(`Conectado a: ${device.name}`);
-        } catch (error) {
-            showToast('Conexão Bluetooth falhou ou foi cancelada.', 'error');
-        }
-    };
     
     const navigateTo = (pageId) => {
         if (STATE.trip.isActive && pageId !== 'dashboard') {
