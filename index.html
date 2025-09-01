@@ -1,0 +1,1568 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Meu Carro Pro</title>
+  <meta name="description" content="A central de comando para gerenciar seu carro.">
+  <meta name="theme-color" content="#111827"/>
+
+  <!-- Ícone -->
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Tailwind -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Registro do Service Worker -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js")
+        .then(() => console.log("Service Worker registrado!"))
+        .catch(err => console.error("Erro ao registrar Service Worker:", err));
+    }
+  </script>
+
+  <style>
+    body {
+      background: linear-gradient(-45deg, #111827, #1f2937, #374151, #111827);
+      background-size: 400% 400%;
+      animation: gradientBG 15s ease infinite;
+    }
+    @keyframes gradientBG {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-gray-200 font-sans antialiased">    <div id="toast-container" class="fixed bottom-4 right-4 z-[100]"></div>
+
+    <header id="main-header" class="glassmorphism shadow-lg sticky top-0 z-20">
+        <div class="p-3 flex items-center justify-between gap-4 h-[72px]">
+            <div class="flex items-center gap-3 flex-shrink-0">
+                <img id="header-car-photo" class="h-12 w-12 rounded-full object-cover border-2 border-gray-600 cursor-pointer" alt="Foto do carro">
+                <div>
+                    <h1 id="header-car-name" class="text-base font-bold text-white text-glow"></h1>
+                    <p id="header-car-plate" class="text-xs text-gray-400"></p>
+                </div>
+            </div>
+             <div id="notification-carousel-container" class="flex-grow min-w-0">
+                <div id="notification-carousel" class="overflow-hidden whitespace-nowrap">
+                    <div id="notification-carousel-track" class="inline-block"></div>
+                </div>
+            </div>
+        </div>
+        <nav id="nav-bar" class="flex justify-around border-t border-gray-700/50">
+             <button data-page="dashboard" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM4 12a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM4 18a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2z"/></svg><span class="text-xs font-medium">Painel</span></button>
+            <button data-page="diario" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg><span class="text-xs font-medium">Diário</span></button>
+            <button data-page="despesas" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" /></svg><span class="text-xs font-medium">Despesas</span></button>
+            <button data-page="lembretes" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1h6z" /></svg><span class="text-xs font-medium">Lembretes</span></button>
+            <button data-page="checklist" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg><span class="text-xs font-medium">Checklist</span></button>
+            <button data-page="documentos" class="nav-btn flex-1 py-2 text-center transition-colors"><svg class="h-6 w-6 mx-auto icon-glow" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg><span class="text-xs font-medium">Docs</span></button>
+        </nav>
+    </header>
+
+    <main id="main-content" class="p-4 relative">
+        <div id="page-dashboard" class="page"></div>
+        <div id="page-diario" class="page hidden"></div>
+        <div id="page-despesas" class="page hidden"></div>
+        <div id="page-lembretes" class="page hidden"></div>
+        <div id="page-documentos" class="page hidden"></div>
+        <div id="page-checklist" class="page hidden"></div>
+    </main>
+
+    <div id="generic-modal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center p-4"></div>
+<footer>
+        <p>Desenvolvido por Flavio Rafael</p>
+        <a href="https://www.flavioitech.com" target="_blank"><i data-lucide="github"></i><span>Ver Site</span></a>
+    </footer>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (toda a configuração inicial, DEFAULT_PROFILE, STATE, UI, DB, etc. continua igual) ...
+    const DEFAULT_PHOTO_URL = 'https://placehold.co/192x192/374151/FFFFFF?text=CAR&font=sans-serif';
+    const PDF_ICON_URL = 'https://placehold.co/192x192/ef4444/FFFFFF?text=PDF';
+    const DEFAULT_PROFILE = {
+        nickname: 'Meu Carro',
+        plate: 'ABC-1234',
+        photo: null,
+        brand: 'Volkswagen',
+        model: 'Golf',
+        year: 2022,
+        color: 'Preto',
+        engineOil: '5W-40 Synthetic',
+        brakeFluid: 'DOT 4',
+        steeringFluid: 'ATF Dexron III',
+        radiatorCoolant: 'G12/G13',
+        customInfo: [],
+        appData: { 
+            reminders: [
+                { id: 1, title: 'Trocar óleo', date: new Date(Date.now() + 5 * 24*60*60*1000).toISOString().split('T')[0], done: false },
+                { id: 2, title: 'Calibrar pneus', date: new Date().toISOString().split('T')[0], done: false },
+                { id: 3, title: 'Pagar IPVA', date: new Date(Date.now() - 10 * 24*60*60*1000).toISOString().split('T')[0], done: true },
+            ],
+            logbook: [],
+            documents: [
+                { id: 'crlv', title: 'Documento do Veículo (CRLV)', url: 'https://placehold.co/300x425/ffffff/111827?text=Frente+CRLV-e', category: 'Principal' },
+                { id: 'cnh', title: 'Carteira de Habilitação (CNH)', url: 'https://placehold.co/300x425/ffffff/111827?text=Frente+CNH', category: 'Principal' }
+            ],
+             checklist: [
+                { id: 1, text: 'Nível do Óleo do Motor', checked: false },
+                { id: 2, text: 'Nível da Água do Radiador', checked: false },
+                { id: 3, text: 'Calibragem dos Pneus (incl. estepe)', checked: false },
+                { id: 4, text: 'Faróis, Lanternas e Setas', checked: false },
+                { id: 5, text: 'Palhetas do Limpador', checked: false },
+                { id: 6, text: 'Fluidos de Freio e Direção', checked: false },
+                { id: 7, text: 'Documentos (CRLV e CNH)', checked: false },
+                { id: 8, text: 'Kit de Emergência (Triângulo, Macaco)', checked: false },
+            ],
+            expenses: [
+                { id: 1, type: 'Combustível', title: 'Posto Shell', date: '2025-08-25', amount: 150.75 },
+                { id: 2, type: 'Manutenção', title: 'Troca de pastilhas', date: '2025-08-15', amount: 320.00 },
+                { id: 3, type: 'Impostos', title: 'IPVA 2025 Parcela 8/12', date: '2025-08-05', amount: 250.00 },
+                { id: 4, type: 'Combustível', title: 'Posto Ipiranga', date: '2025-07-28', amount: 180.50 }
+            ],
+            fuelLevel: 75,
+            engineTemp: 90,
+            tires: { fl: 32, fr: 32, rl: 32, rr: 32 },
+            nextMaintenance: { title: 'Trocar óleo', daysLeft: 3 },
+        }
+    };
+    let STATE = { 
+        currentPage: 'dashboard', 
+        carProfile: JSON.parse(JSON.stringify(DEFAULT_PROFILE)),
+        trip: { isActive: false, watchId: null, lastPosition: null, dailyDistance: { date: null, distance: 0 } },
+        music: {
+            playlist: [
+                { title: 'Highway to Hell', artist: 'AC/DC', art: 'https://placehold.co/128x128/ef4444/FFFFFF?text=AC/DC', spotifyUrl: 'https://open.spotify.com/track/29UPCUS0V4bfcFw6s1V2T8' },
+                { title: 'Bohemian Rhapsody', artist: 'Queen', art: 'https://placehold.co/128x128/7c3aed/FFFFFF?text=QUEEN', spotifyUrl: 'https://open.spotify.com/track/4u7EnebtmKWzANvKgiJJEc' },
+                { title: 'Smells Like Teen Spirit', artist: 'Nirvana', art: 'https://placehold.co/128x128/f59e0b/FFFFFF?text=NIRVANA', spotifyUrl: 'https://open.spotify.com/track/5ghIJDpPoe3CfHMGu71E6T' },
+            ],
+            currentIndex: 0,
+        }
+    };
+    const UI = {
+        mainContent:document.getElementById('main-content'),navBar:document.getElementById('nav-bar'),headerCarName:document.getElementById('header-car-name'),headerCarPlate:document.getElementById('header-car-plate'),headerCarPhoto:document.getElementById('header-car-photo'),genericModal: document.getElementById('generic-modal'),pages:{dashboard:document.getElementById('page-dashboard'),lembretes:document.getElementById('page-lembretes'),diario:document.getElementById('page-diario'),despesas: document.getElementById('page-despesas'),documentos:document.getElementById('page-documentos'),checklist:document.getElementById('page-checklist'),}
+    };
+    const DB = {
+        db: null,
+        init: () => new Promise((resolve, reject) => {
+            const request = indexedDB.open('MeuCarroProDB', 2);
+            request.onupgradeneeded = e => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('appData')) db.createObjectStore('appData');
+            };
+            request.onsuccess = e => {
+                DB.db = e.target.result;
+                resolve();
+            };
+            request.onerror = e => {
+                console.error("Erro no IndexedDB:", e.target.errorCode);
+                reject();
+            };
+        }),
+        get: key => new Promise(resolve => {
+            if (!DB.db) return resolve(null);
+            const req = DB.db.transaction('appData').objectStore('appData').get(key);
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => resolve(null);
+        }),
+        set: (key, value) => new Promise(resolve => {
+            if (!DB.db) return resolve();
+            const req = DB.db.transaction('appData', 'readwrite').objectStore('appData').put(value, key);
+            req.onsuccess = () => resolve();
+            req.onerror = () => resolve();
+        })
+    };
+
+    const showToast = (message, type = 'success') => {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const toast = document.createElement('div');
+        const bgColor = type === 'error' ? 'bg-red-600' : 'bg-teal-500';
+        toast.className = `p-3 mb-3 ${bgColor} text-white rounded-lg shadow-lg transition-all duration-500 transform opacity-0 translate-y-4`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.remove('opacity-0', 'translate-y-4');
+        }, 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-4');
+            toast.addEventListener('transitionend', () => toast.remove());
+        }, 3000);
+    };
+
+    const renderPage = (pageId) => {
+        const pageContainer = UI.pages[pageId];
+        if (!pageContainer) return;
+        let content = '';
+
+        switch (pageId) {
+            case 'dashboard':
+                const dailyDistanceKm = (STATE.trip.dailyDistance.distance / 1000).toFixed(2);
+                const { fuelLevel, tires, nextMaintenance, engineTemp } = STATE.carProfile.appData;
+                const lastExpense = [...(STATE.carProfile.appData.expenses || [])].sort((a,b) => new Date(b.date) - new Date(a.date))[0] || { title: 'N/A', amount: 0 };
+
+
+                content = `
+                    <div class="space-y-4">
+                         <div class="grid grid-cols-2 gap-4">
+                            <button id="google-home-btn" class="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg p-3 rounded-lg flex items-center justify-center text-white font-semibold transition-transform active:scale-95 text-sm">
+                                <svg class="w-5 h-5 mr-2 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                                Google Home
+                            </button>
+                            <button id="routines-btn" class="bg-gradient-to-r from-purple-500 to-violet-600 shadow-lg p-3 rounded-lg flex items-center justify-center text-white font-semibold transition-transform active:scale-95 text-sm">
+                                <svg class="w-5 h-5 mr-2 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                Rotinas
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="glassmorphism p-4 rounded-xl space-y-3">
+                                <h3 class="font-semibold text-gray-300">Navegação Rápida</h3>
+                                <div class="flex gap-2">
+                                    <input id="nav-destination" type="text" placeholder="Para onde vamos?" class="flex-grow bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500 text-sm">
+                                    <button id="nav-start-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold p-2 rounded-lg transition-colors active:scale-95 flex-shrink-0">
+                                        <svg class="w-6 h-6 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="glassmorphism p-4 rounded-xl">
+                                <div class="flex items-center gap-4">
+                                    <img id="music-album-art" src="" alt="Album Art" class="w-16 h-16 rounded-md object-cover">
+                                    <div class="overflow-hidden">
+                                        <p id="music-title" class="font-bold text-white truncate text-glow"></p>
+                                        <p id="music-artist" class="text-sm text-gray-400 truncate"></p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-center items-center gap-4 mt-3">
+                                    <button id="music-prev-btn" class="text-gray-400 hover:text-white transition-colors active:scale-90"><svg class="w-8 h-8 icon-glow" fill="currentColor" viewBox="0 0 20 20"><path d="M8.445 14.832A1 1 0 0010 14.17V5.83a1 1 0 00-1.555-.832L2.302 9.17a1 1 0 000 1.664l6.143 4zM11.555 5.168A1 1 0 0113 5.83v8.34a1 1 0 01-1.445.832l-6.143-4a1 1 0 010-1.664l6.143-4z"></path></svg></button>
+                                    <button id="music-play-spotify-btn" class="bg-[#1DB954] text-white rounded-full w-12 h-12 flex items-center justify-center active:scale-95 transition-transform" title="Ouvir no Spotify">
+                                        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2m4.614 14.613a.62.62 0 0 1-.875.002.624.624 0 0 1-.219-.933c1.962-1.2 2.213-3.14.63-4.579a.624.624 0 0 1 .9-.85c1.9 1.699 1.581 4.2-.336 5.86a.622.622 0 0 1-.099.11zm1.31-2.287a.748.748 0 0 1-1.047.003.75.75 0 0 1-.262-1.116c1.551-1.348 1.66-3.41.32-4.584a.75.75 0 0 1 1.06-1.06c1.75 1.56 1.5 4.183-.47 5.907a.745.745 0 0 1-.121.11zm1.313-2.31a.875.875 0 0 1-1.232 0 .875.875 0 0 1-.295-1.294c1.25-1.425 1.03-3.623-.525-4.66a.875.875 0 1 1 1.08-1.352c2.01 1.29 2.35 4.098.672 5.986a.873.873 0 0 1-.14.12z"/></svg>
+                                    </button>
+                                    <button id="music-next-btn" class="text-gray-400 hover:text-white transition-colors active:scale-90"><svg class="w-8 h-8 icon-glow" fill="currentColor" viewBox="0 0 20 20"><path d="M4.555 5.168A1 1 0 003 5.83v8.34a1 1 0 001.555.832l6.143-4a1 1 0 000-1.664l-6.143-4zM11.555 5.168A1 1 0 0010 5.83v8.34a1 1 0 001.555.832l6.143-4a1 1 0 000-1.664l-6.143-4z"></path></svg></button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">VELOCIDADE</p>
+                                <p id="speedometer-value" class="text-5xl font-mono font-bold text-white text-glow">0</p>
+                                <p class="text-xs text-gray-400">km/h</p>
+                            </div>
+                            <div class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">KM RODADOS (HOJE)</p>
+                                <p id="daily-distance-value" class="text-5xl font-mono font-bold text-white text-glow">${dailyDistanceKm}</p>
+                                <p class="text-xs text-gray-400">km</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button id="add-logbook-entry-btn" class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">REGISTRAR NO DIÁRIO</p>
+                                 <svg class="w-10 h-10 mx-auto mt-2 text-teal-400 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
+                            </button>
+                            <button id="engine-temp-widget-btn" class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">TEMP. DO MOTOR</p>
+                                <p class="text-4xl font-mono font-bold text-white text-glow">${engineTemp}<span class="text-2xl align-top">°C</span></p>
+                            </button>
+                            <button id="fuel-level-widget-btn" class="glassmorphism p-4 rounded-xl">
+                                <p class="text-sm font-medium text-gray-400 mb-2">COMBUSTÍVEL</p>
+                                <div class="w-full bg-gray-700 rounded-full h-2.5">
+                                    <div class="bg-teal-500 h-2.5 rounded-full" style="width: ${fuelLevel}%"></div>
+                                </div>
+                                <p class="text-right text-lg font-mono font-bold text-white mt-2 text-glow">${fuelLevel}%</p>
+                            </button>
+                            <button id="tire-widget-btn" class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">CALIBRAGEM PNEUS</p>
+                                <p class="text-4xl font-mono font-bold text-white text-glow">${tires.fl}<span class="text-xl align-middle"> psi</span></p>
+                            </button>
+                            <div class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">PRÓXIMA MANUTENÇÃO</p>
+                                <p class="text-lg font-bold text-white truncate text-glow">${nextMaintenance.title}</p>
+                                <p class="text-2xl font-mono font-bold text-teal-400 text-glow">em ${nextMaintenance.daysLeft} dias</p>
+                            </div>
+                             <div class="glassmorphism p-4 rounded-xl text-center flex flex-col justify-center">
+                                <p class="text-sm font-medium text-gray-400">ÚLTIMAS DESPESAS</p>
+                                <p class="text-lg font-bold text-white truncate text-glow">${lastExpense.title}</p>
+                                <p class="text-2xl font-mono font-bold text-teal-400 text-glow">R$${lastExpense.amount.toFixed(2)}</p>
+                            </div>
+                        </div>
+                    </div>`;
+                break;
+            
+            case 'diario':
+                const logbookEntries = STATE.carProfile.appData.logbook || [];
+                const logbookIcons = {
+                    'Abastecimento': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 14v-4m4 4v-4m4 4v-4M4 7h16M5 7l1 12a2 2 0 002 2h8a2 2 0 002-2l1-12M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"></path></svg>`,
+                    'Manutenção': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>`,
+                    'Troca de Peça': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>`,
+                    'Limpeza': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l-3 3m5.5 0l-3-3m-3.5 12.5L6 17m5.5 5.5l3-3M17 3l3 3m-5.5 0l3-3m-3.5 12.5l5.5 5.5"></path></svg>`,
+                    'Ocorrência': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>`
+                };
+                content = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white text-glow">Diário de Bordo</h2>
+                        <button id="car-info-btn" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2">
+                           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            Info do Veículo
+                        </button>
+                    </div>
+                    <div id="logbook-list" class="space-y-3">
+                        ${logbookEntries.length > 0 ? [...logbookEntries].sort((a,b) => new Date(b.date) - new Date(a.date)).map(entry => {
+                            let details = `<strong>${entry.description}</strong>`;
+                            if (entry.type === 'Abastecimento') {
+                                details = `Abastecimento: <strong>${entry.liters} L</strong> - <strong>R$ ${entry.amount.toFixed(2)}</strong>`;
+                            }
+                            return `
+                                <div class="glassmorphism p-3 rounded-lg flex items-start justify-between gap-4">
+                                    <div class="flex-grow flex items-start gap-4">
+                                        <div class="flex-shrink-0 text-teal-400">${logbookIcons[entry.type] || ''}</div>
+                                        <div>
+                                            <div class="flex justify-between items-start">
+                                                <p class="font-semibold text-white">${entry.type}</p>
+                                                <p class="text-sm text-gray-400">${entry.odometer} km</p>
+                                            </div>
+                                            <p class="text-white text-sm mt-1">${details}</p>
+                                            <p class="text-xs text-gray-500 text-right mt-2">${new Date(entry.date).toLocaleDateString('pt-BR', {day:'2-digit', month:'long', year:'numeric'})}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0">
+                                        <button class="delete-logbook-btn" data-id="${entry.id}">
+                                            <svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('') : '<p class="text-center text-gray-400 py-4">Nenhum registro no diário.</p>'}
+                    </div>`;
+                break;
+            case 'lembretes':
+                const reminders = STATE.carProfile.appData.reminders || [];
+                const sortedReminders = [...reminders].sort((a, b) => new Date(a.date) - new Date(b.date)).sort((a,b) => a.done - b.done);
+                content = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white text-glow">Lembretes</h2>
+                        <button id="add-reminder-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Adicionar
+                        </button>
+                    </div>
+                    <div id="reminders-list" class="space-y-3">
+                        ${sortedReminders.length > 0 ? sortedReminders.map(r => {
+                            const isPast = new Date(r.date) < new Date() && !r.done;
+                            return `
+                                <div class="glassmorphism p-3 rounded-lg flex items-center justify-between gap-3 ${r.done ? 'opacity-50' : ''}">
+                                    <div class="flex items-center gap-3 flex-grow">
+                                        <input type="checkbox" data-id="${r.id}" class="toggle-reminder w-6 h-6 rounded text-teal-500 bg-gray-800 border-gray-600 focus:ring-teal-600" ${r.done ? 'checked' : ''}>
+                                        <div>
+                                            <p class="font-semibold ${r.done ? 'line-through' : ''}">${r.title}</p>
+                                            <p class="text-xs ${isPast ? 'text-red-400 font-bold' : 'text-gray-400'}">${new Date(r.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex-shrink-0 flex gap-2">
+                                        <button class="edit-reminder-btn" data-id="${r.id}"><svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
+                                        <button class="delete-reminder-btn" data-id="${r.id}"><svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                    </div>
+                                </div>
+                            `}).join('') : '<p class="text-center text-gray-400 py-4">Nenhum lembrete cadastrado.</p>'}
+                    </div>`;
+                break;
+
+            case 'documentos':
+                const documents = STATE.carProfile.appData.documents || [];
+                const groupedDocs = documents.reduce((acc, doc) => {
+                    const category = doc.category || 'Outros';
+                    if (!acc[category]) acc[category] = [];
+                    acc[category].push(doc);
+                    return acc;
+                }, {});
+
+                content = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white text-glow">Documentos</h2>
+                        <button id="add-doc-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Adicionar
+                        </button>
+                    </div>`;
+
+                for (const category in groupedDocs) {
+                    content += `
+                        <h3 class="text-lg font-bold text-white text-glow mt-6 mb-3">${category}</h3>
+                        <div class="space-y-3">
+                            ${groupedDocs[category].map(doc => `
+                                <div class="glassmorphism p-3 rounded-lg flex items-center justify-between gap-3">
+                                    <p class="font-semibold">${doc.title}</p>
+                                    <div class="flex-shrink-0 flex gap-2">
+                                        <button class="doc-view-btn" data-url="${doc.url}"><svg class="w-6 h-6 text-gray-400 hover:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                                        <button class="edit-doc-btn" data-id="${doc.id}"><svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
+                                        <button class="delete-doc-btn" data-id="${doc.id}"><svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+                break;
+
+            case 'checklist':
+                const checklistItems = STATE.carProfile.appData.checklist || [];
+                content = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white text-glow">Checklist de Viagem</h2>
+                        <div>
+                             <button id="add-checklist-item-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold p-2 rounded-lg transition-colors text-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            </button>
+                            <button id="reset-checklist-btn" class="bg-red-600 hover:bg-red-500 text-white font-bold p-2 rounded-lg transition-colors text-sm ml-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 12A9 9 0 005.64 5.64L4 4m0 0v5h5m12 8a9 9 0 00-15.36-3.36L20 20"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="checklist-list" class="space-y-3">
+                        ${checklistItems.length > 0 ? checklistItems.map(item => `
+                             <div class="glassmorphism p-3 rounded-lg flex items-center justify-between gap-3">
+                                <div class="flex items-center gap-3 flex-grow">
+                                    <input type="checkbox" data-id="${item.id}" class="toggle-checklist-item w-6 h-6 rounded text-teal-500 bg-gray-800 border-gray-600 focus:ring-teal-600" ${item.checked ? 'checked' : ''}>
+                                    <label class="flex-grow ${item.checked ? 'line-through text-gray-400' : 'text-white'}">${item.text}</label>
+                                </div>
+                                <div class="flex-shrink-0 flex gap-2">
+                                    <button class="edit-checklist-item-btn" data-id="${item.id}"><svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
+                                    <button class="delete-checklist-item-btn" data-id="${item.id}"><svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-center text-gray-400 py-4">Nenhum item na lista. Adicione um!</p>'}
+                    </div>
+                `;
+                break;
+            case 'despesas':
+                const expenses = STATE.carProfile.appData.expenses || [];
+                const now = new Date();
+                const currentMonth = now.getMonth();
+                const currentYear = now.getFullYear();
+
+                const monthlyTotal = expenses
+                    .filter(e => {
+                        const expenseDate = new Date(e.date);
+                        return expenseDate.getMonth() === currentMonth && expenseDate.getFullYear() === currentYear;
+                    })
+                    .reduce((sum, e) => sum + e.amount, 0);
+
+                const yearlyTotal = expenses
+                    .filter(e => new Date(e.date).getFullYear() === currentYear)
+                    .reduce((sum, e) => sum + e.amount, 0);
+
+                content = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-bold text-white text-glow">Controle de Despesas</h2>
+                        <button id="add-expense-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors text-sm flex items-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>
+                            Adicionar
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="glassmorphism p-4 rounded-xl text-center">
+                            <p class="text-sm font-medium text-gray-400">Gasto no Mês</p>
+                            <p class="text-3xl font-mono font-bold text-white text-glow">R$${monthlyTotal.toFixed(2)}</p>
+                        </div>
+                        <div class="glassmorphism p-4 rounded-xl text-center">
+                            <p class="text-sm font-medium text-gray-400">Gasto no Ano</p>
+                            <p class="text-3xl font-mono font-bold text-white text-glow">R$${yearlyTotal.toFixed(2)}</p>
+                        </div>
+                    </div>
+                     <div id="expenses-list" class="space-y-3">
+                        ${expenses.length > 0 ? [...expenses].sort((a,b) => new Date(b.date) - new Date(a.date)).map(exp => `
+                            <div class="glassmorphism p-3 rounded-lg flex items-center justify-between gap-3">
+                                <div class="flex-grow">
+                                    <div class="flex justify-between items-start">
+                                        <p class="font-semibold text-white">${exp.title}</p>
+                                        <p class="font-mono text-lg text-teal-400">R$${exp.amount.toFixed(2)}</p>
+                                    </div>
+                                    <div class="flex justify-between items-end mt-1">
+                                        <p class="text-xs px-2 py-0.5 rounded-full bg-gray-700 text-gray-300">${exp.type}</p>
+                                        <p class="text-xs text-gray-400">${new Date(exp.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</p>
+                                    </div>
+                                </div>
+                                <div class="flex-shrink-0 flex gap-2 ml-2">
+                                    <button class="edit-expense-btn" data-id="${exp.id}"><svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
+                                    <button class="delete-expense-btn" data-id="${exp.id}"><svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
+                                </div>
+                            </div>
+                        `).join('') : '<p class="text-center text-gray-400 py-4">Nenhuma despesa registrada.</p>'}
+                    </div>
+                `;
+                break;
+
+            default:
+                content = `<div class="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center"><p class="text-gray-400">Página de <span class="font-bold text-white">${pageId}</span> em construção.</p></div>`;
+                break;
+        }
+        pageContainer.innerHTML = content;
+
+        if (pageId === 'dashboard') {
+            document.getElementById('google-home-btn').onclick = openGoogleHome;
+            document.getElementById('routines-btn').onclick = openRoutines;
+            document.getElementById('nav-start-btn').onclick = startNavigation;
+            document.getElementById('music-play-spotify-btn').onclick = playOnSpotify;
+            document.getElementById('music-next-btn').onclick = nextTrack;
+            document.getElementById('music-prev-btn').onclick = prevTrack;
+            document.getElementById('add-logbook-entry-btn').onclick = openLogbookEntryModal;
+            document.getElementById('tire-widget-btn').onclick = openTireModal;
+            document.getElementById('engine-temp-widget-btn').onclick = openEngineTempModal;
+            document.getElementById('fuel-level-widget-btn').onclick = openFuelLevelModal;
+            updateMusicWidget();
+        }
+        if (pageId === 'diario') {
+            document.getElementById('car-info-btn').onclick = openCarInfoModal;
+            document.querySelectorAll('.delete-logbook-btn').forEach(btn => {
+                btn.onclick = (e) => deleteLogbookEntry(parseInt(e.currentTarget.dataset.id));
+            });
+        }
+        if (pageId === 'despesas') {
+            document.getElementById('add-expense-btn').onclick = () => openExpenseModal();
+            document.querySelectorAll('.edit-expense-btn').forEach(btn => btn.onclick = (e) => openExpenseModal(parseInt(e.currentTarget.dataset.id)));
+            document.querySelectorAll('.delete-expense-btn').forEach(btn => btn.onclick = (e) => deleteExpense(parseInt(e.currentTarget.dataset.id)));
+        }
+        if (pageId === 'lembretes') {
+            document.getElementById('add-reminder-btn').onclick = () => openReminderModal();
+            document.querySelectorAll('.toggle-reminder').forEach(checkbox => {
+                checkbox.onchange = (e) => toggleReminder(parseInt(e.target.dataset.id));
+            });
+            document.querySelectorAll('.edit-reminder-btn').forEach(button => {
+                button.onclick = (e) => openReminderModal(parseInt(e.currentTarget.dataset.id));
+            });
+            document.querySelectorAll('.delete-reminder-btn').forEach(button => {
+                button.onclick = (e) => deleteReminder(parseInt(e.currentTarget.dataset.id));
+            });
+        }
+        if (pageId === 'documentos') {
+            document.getElementById('add-doc-btn').onclick = () => openDocumentModal();
+            document.querySelectorAll('.doc-view-btn').forEach(button => {
+                button.onclick = (e) => {
+                    const url = e.currentTarget.dataset.url;
+                    if (url) {
+                        openDocumentUrl(url);
+                    } else {
+                        showToast('Nenhum documento encontrado. Adicione um primeiro.', 'error');
+                    }
+                };
+            });
+            document.querySelectorAll('.edit-doc-btn').forEach(button => {
+                button.onclick = (e) => openDocumentModal(e.currentTarget.dataset.id);
+            });
+            document.querySelectorAll('.delete-doc-btn').forEach(button => {
+                button.onclick = (e) => deleteDocument(e.currentTarget.dataset.id);
+            });
+        }
+        if(pageId === 'checklist') {
+            document.getElementById('add-checklist-item-btn').onclick = () => openChecklistItemModal();
+            document.getElementById('reset-checklist-btn').onclick = resetChecklist;
+            document.querySelectorAll('.toggle-checklist-item').forEach(checkbox => {
+                checkbox.onchange = (e) => toggleChecklistItem(parseInt(e.target.dataset.id));
+            });
+            document.querySelectorAll('.edit-checklist-item-btn').forEach(button => {
+                button.onclick = (e) => openChecklistItemModal(parseInt(e.currentTarget.dataset.id));
+            });
+            document.querySelectorAll('.delete-checklist-item-btn').forEach(button => {
+                button.onclick = (e) => deleteChecklistItem(parseInt(e.currentTarget.dataset.id));
+            });
+        }
+    };
+    
+    // --- DOCUMENT CRUD FUNCTIONS ---
+    const getDisplayableUrl = (url) => {
+        if (!url) return null;
+        const driveMatch = url.match(/drive\.google\.com.*\/d\/([^\/]+)/);
+        if (driveMatch && driveMatch[1]) {
+            return `https://drive.google.com/uc?export=view&id=${driveMatch[1]}`;
+        }
+        return url;
+    };
+    
+    const isPdfUrl = (url) => {
+        if (!url) return false;
+        return url.toLowerCase().endsWith('.pdf');
+    }
+
+    const openDocumentUrl = (url) => {
+        if (url.includes('drive.google.com')) {
+            window.open(url, '_blank');
+            return;
+        }
+        const displayUrl = getDisplayableUrl(url);
+        if (isPdfUrl(url)) {
+             const modalContent = `
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-2 w-full max-w-2xl h-[85vh] animate-fade-in-up relative flex flex-col">
+                    <iframe src="${displayUrl}" class="w-full h-full rounded-lg" frameborder="0"></iframe>
+                    <button id="modal-close-btn" class="absolute top-2 right-2 bg-gray-900/50 text-white rounded-full w-8 h-8 flex items-center justify-center">×</button>
+                </div>`;
+            UI.genericModal.innerHTML = modalContent;
+            UI.genericModal.classList.remove('hidden');
+            document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(url)) {
+            const modalContent = `
+                <div class="bg-gray-800 border border-gray-700 rounded-xl p-2 w-full max-w-lg animate-fade-in-up relative">
+                    <img src="${displayUrl}" class="w-full h-auto rounded-lg object-contain max-h-[80vh]">
+                    <button id="modal-close-btn" class="absolute top-2 right-2 bg-gray-900/50 text-white rounded-full w-8 h-8 flex items-center justify-center">×</button>
+                </div>`;
+            UI.genericModal.innerHTML = modalContent;
+            UI.genericModal.classList.remove('hidden');
+            document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        } else {
+            window.open(url, '_blank');
+        }
+    };
+
+    const openDocumentModal = (id = null) => {
+        const isEditing = id !== null;
+        let doc = {};
+        if (isEditing) {
+            doc = STATE.carProfile.appData.documents.find(d => d.id == id) || {};
+        }
+        const title = isEditing ? doc.title : '';
+        const url = isEditing ? doc.url : '';
+        const category = isEditing ? doc.category : '';
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Documento</h2>
+                <form id="modal-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="doc-title" class="text-sm font-medium text-gray-300 block mb-1">Título do Documento</label>
+                            <input type="text" id="doc-title" value="${title}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                         <div>
+                            <label for="doc-category" class="text-sm font-medium text-gray-300 block mb-1">Categoria</label>
+                            <input type="text" id="doc-category" value="${category}" placeholder="Ex: Principal, Seguro..." class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                        <div>
+                            <label for="doc-url" class="text-sm font-medium text-gray-300 block mb-1">URL (Imagem, PDF, Google Drive)</label>
+                            <input type="url" id="doc-url" value="${url}" placeholder="https://..." class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = (e) => {
+            e.preventDefault();
+            saveDocument(id);
+        };
+    };
+
+    const saveDocument = (id = null) => {
+        const title = document.getElementById('doc-title').value;
+        const category = document.getElementById('doc-category').value;
+        const url = document.getElementById('doc-url').value;
+        if (!title || !url || !category) {
+            showToast('Por favor, preencha todos os campos.', 'error');
+            return;
+        }
+        if (id !== null) {
+            const doc = STATE.carProfile.appData.documents.find(d => d.id == id);
+            if (doc) {
+                doc.title = title;
+                doc.url = url;
+                doc.category = category;
+            }
+        } else {
+            const newDoc = { id: 'doc_' + Date.now(), title: title, url: url, category: category };
+            if(!STATE.carProfile.appData.documents) STATE.carProfile.appData.documents = [];
+            STATE.carProfile.appData.documents.push(newDoc);
+        }
+        UI.genericModal.classList.add('hidden');
+        saveProfile();
+        renderPage('documentos');
+        showToast('Documento salvo com sucesso!');
+    };
+
+    const deleteDocument = (id) => {
+        if (id === 'crlv' || id === 'cnh') {
+            showToast('Não é possível excluir os documentos principais.', 'error');
+            return;
+        }
+        showConfirmationModal({ 
+            message: 'Tem certeza que deseja excluir este documento?', 
+            onConfirm: () => {
+                STATE.carProfile.appData.documents = STATE.carProfile.appData.documents.filter(d => d.id != id);
+                saveProfile();
+                renderPage('documentos');
+                showToast('Documento excluído.');
+            }
+        });
+    };
+
+    // --- REMINDER CRUD FUNCTIONS ---
+    const openReminderModal = (id = null) => {
+        const isEditing = id !== null;
+        const reminder = isEditing ? STATE.carProfile.appData.reminders.find(r => r.id === id) : {};
+        const title = isEditing ? reminder.title : '';
+        const date = isEditing ? reminder.date : new Date().toISOString().split('T')[0];
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Lembrete</h2>
+                <form id="modal-form">
+                    <div class="space-y-4">
+                        <div>
+                            <label for="reminder-title" class="text-sm font-medium text-gray-300 block mb-1">Título</label>
+                            <input type="text" id="reminder-title" value="${title}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                        <div>
+                            <label for="reminder-date" class="text-sm font-medium text-gray-300 block mb-1">Data</label>
+                            <input type="date" id="reminder-date" value="${date}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = (e) => {
+            e.preventDefault();
+            saveReminder(id);
+        };
+    };
+
+    const saveReminder = (id = null) => {
+        const title = document.getElementById('reminder-title').value;
+        const date = document.getElementById('reminder-date').value;
+        if (!title || !date) {
+            showToast('Por favor, preencha todos os campos.', 'error');
+            return;
+        }
+        if (id !== null) {
+            const reminder = STATE.carProfile.appData.reminders.find(r => r.id === id);
+            if (reminder) {
+                reminder.title = title;
+                reminder.date = date;
+            }
+        } else {
+            const newReminder = { id: Date.now(), title: title, date: date, done: false };
+            STATE.carProfile.appData.reminders.push(newReminder);
+        }
+        UI.genericModal.classList.add('hidden');
+        saveProfile();
+        renderPage('lembretes');
+        startNotificationCarousel();
+        showToast('Lembrete salvo com sucesso!');
+    };
+
+    const deleteReminder = (id) => {
+        showConfirmationModal({
+            message: 'Tem certeza que deseja excluir este lembrete?', 
+            onConfirm: () => {
+                STATE.carProfile.appData.reminders = STATE.carProfile.appData.reminders.filter(r => r.id !== id);
+                saveProfile();
+                renderPage('lembretes');
+                startNotificationCarousel();
+                showToast('Lembrete excluído.');
+            }
+        });
+    };
+
+    // --- [NOVO] CHECKLIST CRUD FUNCTIONS ---
+    const openChecklistItemModal = (id = null) => {
+        const isEditing = id !== null;
+        const item = isEditing ? STATE.carProfile.appData.checklist.find(i => i.id === id) : {};
+        const text = isEditing ? item.text : '';
+
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Item do Checklist</h2>
+                <form id="modal-form">
+                    <label for="checklist-text" class="text-sm font-medium text-gray-300 block mb-1">Descrição do Item</label>
+                    <input type="text" id="checklist-text" value="${text}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = (e) => {
+            e.preventDefault();
+            saveChecklistItem(id);
+        };
+    };
+
+    const saveChecklistItem = (id = null) => {
+        const text = document.getElementById('checklist-text').value;
+        if (!text) {
+            showToast('A descrição não pode ficar em branco.', 'error');
+            return;
+        }
+        if (id !== null) {
+            const item = STATE.carProfile.appData.checklist.find(i => i.id === id);
+            if (item) item.text = text;
+        } else {
+            const newItem = { id: Date.now(), text: text, checked: false };
+            STATE.carProfile.appData.checklist.push(newItem);
+        }
+        UI.genericModal.classList.add('hidden');
+        saveProfile();
+        renderPage('checklist');
+        showToast('Item do checklist salvo!');
+    };
+
+    const deleteChecklistItem = (id) => {
+        showConfirmationModal({
+            message: 'Tem certeza que deseja excluir este item do checklist?', 
+            onConfirm: () => {
+                STATE.carProfile.appData.checklist = STATE.carProfile.appData.checklist.filter(i => i.id !== id);
+                saveProfile();
+                renderPage('checklist');
+                showToast('Item excluído.');
+            }
+        });
+    };
+
+    const toggleChecklistItem = async (id) => {
+        const item = STATE.carProfile.appData.checklist.find(i => i.id === id);
+        if (item) {
+            item.checked = !item.checked;
+            await saveProfile();
+            renderPage('checklist');
+        }
+    };
+    
+    const resetChecklist = () => {
+        showConfirmationModal({
+            message: 'Deseja desmarcar todos os itens do checklist?',
+            confirmText: 'Reiniciar', 
+            onConfirm: () => {
+                STATE.carProfile.appData.checklist.forEach(item => item.checked = false);
+                saveProfile();
+                renderPage('checklist');
+                showToast('Checklist reiniciado.');
+            }
+        });
+    };
+
+    // --- [NOVO] EXPENSE CRUD FUNCTIONS ---
+    const openExpenseModal = (id = null) => {
+        const isEditing = id !== null;
+        const expense = isEditing ? STATE.carProfile.appData.expenses.find(e => e.id === id) : {};
+        const title = isEditing ? expense.title : '';
+        const type = isEditing ? expense.type : 'Combustível';
+        const date = isEditing ? expense.date : new Date().toISOString().split('T')[0];
+        const amount = isEditing ? expense.amount : '';
+        const expenseTypes = ['Combustível', 'Manutenção', 'Impostos', 'Seguro', 'Limpeza', 'Acessórios', 'Outros'];
+
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Nova'} Despesa</h2>
+                <form id="modal-form" class="space-y-4">
+                    <div>
+                        <label for="expense-title" class="text-sm font-medium text-gray-300 block mb-1">Descrição</label>
+                        <input type="text" id="expense-title" value="${title}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                    </div>
+                    <div>
+                        <label for="expense-type" class="text-sm font-medium text-gray-300 block mb-1">Tipo</label>
+                        <select id="expense-type" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500">
+                           ${expenseTypes.map(t => `<option ${t === type ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="expense-date" class="text-sm font-medium text-gray-300 block mb-1">Data</label>
+                            <input type="date" id="expense-date" value="${date}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                        <div>
+                            <label for="expense-amount" class="text-sm font-medium text-gray-300 block mb-1">Valor (R$)</label>
+                            <input type="number" step="0.01" id="expense-amount" value="${amount}" placeholder="150.75" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 pt-4">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = (e) => {
+            e.preventDefault();
+            saveExpense(id);
+        };
+    };
+
+    const saveExpense = (id = null) => {
+        const title = document.getElementById('expense-title').value;
+        const type = document.getElementById('expense-type').value;
+        const date = document.getElementById('expense-date').value;
+        const amount = parseFloat(document.getElementById('expense-amount').value);
+        if (!title || !date || !amount) {
+            showToast('Preencha todos os campos corretamente.', 'error');
+            return;
+        }
+        if (id !== null) {
+            const expense = STATE.carProfile.appData.expenses.find(e => e.id === id);
+            if (expense) {
+                expense.title = title;
+                expense.type = type;
+                expense.date = date;
+                expense.amount = amount;
+            }
+        } else {
+            const newExpense = { id: Date.now(), title, type, date, amount };
+            STATE.carProfile.appData.expenses.push(newExpense);
+        }
+        UI.genericModal.classList.add('hidden');
+        saveProfile();
+        renderPage('despesas');
+        showToast('Despesa salva com sucesso!');
+    };
+
+    const deleteExpense = (id) => {
+        showConfirmationModal({
+            message: 'Tem certeza que deseja excluir esta despesa?', 
+            onConfirm: () => {
+                STATE.carProfile.appData.expenses = STATE.carProfile.appData.expenses.filter(e => e.id !== id);
+                saveProfile();
+                renderPage('despesas');
+                showToast('Despesa excluída.');
+            }
+        });
+    };
+    
+    const deleteLogbookEntry = (id) => {
+        showConfirmationModal({
+            message: 'Tem certeza que deseja excluir este registro do diário?',
+            onConfirm: () => {
+                STATE.carProfile.appData.logbook = STATE.carProfile.appData.logbook.filter(entry => entry.id !== id);
+                saveProfile();
+                renderPage('diario');
+                showToast('Registro do diário excluído.');
+            }
+        });
+    };
+    
+    const showConfirmationModal = (options) => {
+        const { 
+            message, 
+            onConfirm, 
+            onCancel,
+            confirmText = 'Excluir', 
+            confirmClass = 'bg-red-600 hover:bg-red-500', 
+            cancelText = 'Cancelar' 
+        } = options;
+
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up text-center">
+                <p class="text-white mb-6">${message}</p>
+                <div class="flex gap-2 mt-6">
+                    <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">${cancelText}</button>
+                    <button type="button" id="modal-confirm-btn" class="flex-1 ${confirmClass} text-white font-bold py-2 px-4 rounded-lg transition-colors">${confirmText}</button>
+                </div>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        
+        document.getElementById('modal-close-btn').onclick = () => {
+            UI.genericModal.classList.add('hidden');
+            if (onCancel) onCancel();
+        };
+
+        document.getElementById('modal-confirm-btn').onclick = () => {
+            UI.genericModal.classList.add('hidden');
+            if(onConfirm) onConfirm();
+        };
+    };
+
+
+    // --- OTHER MODAL & SAVE FUNCTIONS ---
+    const openCarInfoModal = () => {
+        const { nickname, plate, brand, model, year, color, engineOil, brakeFluid, steeringFluid, radiatorCoolant, customInfo } = STATE.carProfile;
+        let customInfoHTML = '';
+        if (customInfo && customInfo.length > 0) {
+            customInfoHTML += '<div class="border-t border-gray-700 my-3"></div>';
+            customInfoHTML += customInfo.map(info => `<p><span class="font-semibold text-gray-400">${info.label}:</span> <span class="text-white">${info.value}</span></p>`).join('');
+        }
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-4 text-white">Informações do Veículo</h2>
+                <div class="space-y-2 mt-4 text-left max-h-[60vh] overflow-y-auto pr-2">
+                    <p><span class="font-semibold text-gray-400">Apelido:</span> <span class="text-white">${nickname}</span></p>
+                    <p><span class="font-semibold text-gray-400">Placa:</span> <span class="text-white">${plate}</span></p>
+                    <p><span class="font-semibold text-gray-400">Marca:</span> <span class="text-white">${brand || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Modelo:</span> <span class="text-white">${model || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Ano:</span> <span class="text-white">${year || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Cor:</span> <span class="text-white">${color || 'Não informado'}</span></p>
+                    <div class="border-t border-gray-700 my-3"></div>
+                    <p><span class="font-semibold text-gray-400">Óleo do Motor:</span> <span class="text-white">${engineOil || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Óleo do Freio:</span> <span class="text-white">${brakeFluid || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Óleo da Direção:</span> <span class="text-white">${steeringFluid || 'Não informado'}</span></p>
+                    <p><span class="font-semibold text-gray-400">Água do Radiador:</span> <span class="text-white">${radiatorCoolant || 'Não informado'}</span></p>
+                    ${customInfoHTML}
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Fechar</button>
+                    <button type="button" id="modal-edit-btn" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Editar</button>
+                </div>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-edit-btn').onclick = () => openVehicleModal();
+    };
+
+    const openTireModal = () => {
+        const { tires } = STATE.carProfile.appData;
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">Editar Calibragem (PSI)</h2>
+                <form id="modal-form">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="tire-fl" class="text-sm font-medium text-gray-300 block mb-1">Dianteiro Esq.</label>
+                            <input type="number" id="tire-fl" value="${tires.fl}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label for="tire-fr" class="text-sm font-medium text-gray-300 block mb-1">Dianteiro Dir.</label>
+                            <input type="number" id="tire-fr" value="${tires.fr}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label for="tire-rl" class="text-sm font-medium text-gray-300 block mb-1">Traseiro Esq.</label>
+                            <input type="number" id="tire-rl" value="${tires.rl}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                        <div>
+                            <label for="tire-rr" class="text-sm font-medium text-gray-300 block mb-1">Traseiro Dir.</label>
+                            <input type="number" id="tire-rr" value="${tires.rr}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                        </div>
+                    </div>
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = e => {
+            e.preventDefault();
+            STATE.carProfile.appData.tires.fl = parseInt(document.getElementById('tire-fl').value) || 0;
+            STATE.carProfile.appData.tires.fr = parseInt(document.getElementById('tire-fr').value) || 0;
+            STATE.carProfile.appData.tires.rl = parseInt(document.getElementById('tire-rl').value) || 0;
+            STATE.carProfile.appData.tires.rr = parseInt(document.getElementById('tire-rr').value) || 0;
+            saveProfile();
+            UI.genericModal.classList.add('hidden');
+            renderPage('dashboard');
+        };
+    };
+
+    const openEngineTempModal = () => {
+        const { engineTemp } = STATE.carProfile.appData;
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">Editar Temperatura do Motor</h2>
+                <form id="modal-form">
+                    <label for="engine-temp" class="text-sm font-medium text-gray-300 block mb-1">Temperatura (°C)</label>
+                    <input type="number" id="engine-temp" value="${engineTemp}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = e => {
+            e.preventDefault();
+            STATE.carProfile.appData.engineTemp = parseInt(document.getElementById('engine-temp').value) || 0;
+            saveProfile();
+            UI.genericModal.classList.add('hidden');
+            renderPage('dashboard');
+        };
+    };
+
+    const openFuelLevelModal = () => {
+        const { fuelLevel } = STATE.carProfile.appData;
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">Editar Nível do Combustível</h2>
+                <form id="modal-form">
+                    <label for="fuel-level" class="text-sm font-medium text-gray-300 block mb-1">Nível do Tanque (%)</label>
+                    <input type="number" id="fuel-level" value="${fuelLevel}" min="0" max="100" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white text-center focus:ring-teal-500 focus:border-teal-500">
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit = e => {
+            e.preventDefault();
+            STATE.carProfile.appData.fuelLevel = parseInt(document.getElementById('fuel-level').value) || 0;
+            saveProfile();
+            UI.genericModal.classList.add('hidden');
+            renderPage('dashboard');
+        };
+    };
+    
+   const openLogbookEntryModal = () => {
+        const modalContent = `
+            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+                <h2 class="text-xl font-bold mb-5 text-white">Adicionar Registro ao Diário</h2>
+                <form id="modal-form" class="space-y-4">
+                    <div>
+                        <label for="log-type" class="text-sm font-medium text-gray-300 block mb-1">Tipo de Registro</label>
+                        <select id="log-type" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500">
+                            <option>Abastecimento</option>
+                            <option>Manutenção</option>
+                            <option>Troca de Peça</option>
+                            <option>Limpeza</option>
+                            <option>Ocorrência</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="log-odometer" class="text-sm font-medium text-gray-300 block mb-1">Odômetro (km)</label>
+                        <input type="number" id="log-odometer" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                    </div>
+                    <div id="log-details-container"></div>
+                    <div class="flex gap-2 mt-6">
+                        <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                        <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                    </div>
+                </form>
+            </div>`;
+        UI.genericModal.innerHTML = modalContent;
+        UI.genericModal.classList.remove('hidden');
+
+        const typeSelect = document.getElementById('log-type');
+        const detailsContainer = document.getElementById('log-details-container');
+        
+        const updateLogForm = () => {
+            const type = typeSelect.value;
+            if (type === 'Abastecimento') {
+                detailsContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="log-liters" class="text-sm font-medium text-gray-300 block mb-1">Litros (L)</label>
+                            <input type="number" step="0.01" id="log-liters" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                        <div>
+                            <label for="log-amount" class="text-sm font-medium text-gray-300 block mb-1">Valor (R$)</label>
+                            <input type="number" step="0.01" id="log-amount" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                        </div>
+                    </div>`;
+            } else {
+                 detailsContainer.innerHTML = `
+                    <div>
+                        <label for="log-description" class="text-sm font-medium text-gray-300 block mb-1">Descrição</label>
+                        <input type="text" id="log-description" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500" required>
+                    </div>`;
+            }
+        };
+        
+        typeSelect.onchange = updateLogForm;
+        updateLogForm();
+
+        document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
+        
+        document.getElementById('modal-form').onsubmit = e => {
+            e.preventDefault();
+            const newEntry = {
+                id: Date.now(),
+                type: document.getElementById('log-type').value,
+                date: new Date().toISOString(),
+                odometer: parseInt(document.getElementById('log-odometer').value),
+            };
+
+            const finalizeSave = (entry, toastMessage) => {
+                if(!STATE.carProfile.appData.logbook) STATE.carProfile.appData.logbook = [];
+                STATE.carProfile.appData.logbook.unshift(entry);
+                saveProfile();
+                showToast(toastMessage);
+                renderPage('diario'); 
+            };
+
+            if (newEntry.type === 'Abastecimento') {
+                newEntry.liters = parseFloat(document.getElementById('log-liters').value);
+                newEntry.amount = parseFloat(document.getElementById('log-amount').value);
+                newEntry.description = `Abastecimento`;
+                
+                UI.genericModal.classList.add('hidden');
+
+                showConfirmationModal({
+                    message: 'Deseja adicionar esta entrada às Despesas também?',
+                    confirmText: 'Sim, Adicionar',
+                    cancelText: 'Não, Obrigado',
+                    confirmClass: 'bg-teal-600 hover:bg-teal-500',
+                    onConfirm: () => {
+                        const newExpense = {
+                            id: Date.now() + 1,
+                            type: 'Combustível',
+                            title: `Abastecimento em ${new Date(newEntry.date).toLocaleDateString('pt-BR')}`,
+                            date: newEntry.date.split('T')[0],
+                            amount: newEntry.amount,
+                        };
+                        if(!STATE.carProfile.appData.expenses) STATE.carProfile.appData.expenses = [];
+                        STATE.carProfile.appData.expenses.push(newExpense);
+                        finalizeSave(newEntry, 'Registro e Despesa salvos com sucesso!');
+                    },
+                    onCancel: () => {
+                         finalizeSave(newEntry, 'Registro salvo no Diário.');
+                    }
+                });
+
+            } else {
+                newEntry.description = document.getElementById('log-description').value;
+                UI.genericModal.classList.add('hidden');
+                finalizeSave(newEntry, 'Registro salvo no Diário!');
+            }
+        };
+    };
+
+    const openGoogleHome = () => {
+        const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app');
+        const intentUrl = `intent://launch/#Intent;package=com.google.android.apps.chromecast.app;S.browser_fallback_url=${fallbackUrl};end`;
+        window.location.href = intentUrl;
+    };
+
+    const openRoutines = () => {
+        const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app');
+        const intentUrl = `intent://launch/#Intent;package=com.google.android.apps.chromecast.app;S.browser_fallback_url=${fallbackUrl};end`;
+        window.location.href = intentUrl;
+        showToast('Abra a seção "Rotinas" no Google Home.', 'success');
+    };
+
+    // Abre o Spotify (usando URL da playlist/música)
+    const openSpotify = (spotifyUrl) => {
+        try {
+            if (!spotifyUrl) {
+                showToast("Nenhuma música/playlist configurada.", "error");
+                return;
+            }
+
+            // Converte URL web para esquema nativo do app
+            if (spotifyUrl.startsWith("https://open.spotify.com/")) {
+                const uri = spotifyUrl.replace("https://open.spotify.com/", "spotify:");
+                window.location.href = uri;
+            } else {
+                window.location.href = spotifyUrl;
+            }
+        } catch (e) {
+            console.error("Erro ao abrir Spotify:", e);
+            showToast("Não foi possível abrir o Spotify.", "error");
+        }
+    };
+
+    
+    const navigateTo = (pageId) => {
+        if (STATE.trip.isActive && pageId !== 'dashboard') {
+            showToast("Pare a viagem antes de sair do painel.", 'error');
+            return;
+        }
+        STATE.currentPage = pageId;
+        Object.keys(UI.pages).forEach(key => {
+            UI.pages[key].classList.toggle('hidden', key !== pageId)
+        });
+        renderPage(pageId);
+        UI.navBar.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.toggle('text-teal-400', btn.dataset.page === pageId);
+            btn.classList.toggle('text-gray-400', btn.dataset.page !== pageId);
+        });
+    };
+
+    const renderUI = () => {
+        const { nickname, plate, photo } = STATE.carProfile;
+        UI.headerCarName.textContent = nickname;
+        UI.headerCarPlate.textContent = plate;
+        const photoUrl = photo;
+        if (photoUrl && isPdfUrl(photoUrl)) {
+            UI.headerCarPhoto.src = PDF_ICON_URL;
+        } else {
+            UI.headerCarPhoto.src = getDisplayableUrl(photoUrl) || DEFAULT_PHOTO_URL;
+        }
+        startNotificationCarousel();
+        renderPage(STATE.currentPage);
+    };
+
+    const startNavigation = () => {
+        const destination = document.getElementById('nav-destination').value;
+        if (!destination) {
+            showToast('Por favor, insira um destino.', 'error');
+            return;
+        }
+        const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+        window.open(url, '_blank');
+    };
+    
+    const updateMusicWidget = () => {
+        const track = STATE.music.playlist[STATE.music.currentIndex];
+        document.getElementById('music-album-art').src = track.art;
+        document.getElementById('music-title').textContent = track.title;
+        document.getElementById('music-artist').textContent = track.artist;
+    };
+
+        const playOnSpotify = () => {
+        // Tenta abrir o app nativo do Spotify
+        window.location.href = "spotify://";
+
+        // Cria um timer para abrir o site como alternativa (fallback)
+        const fallbackTimer = setTimeout(() => {
+            // Se este código for executado, significa que o app não abriu,
+            // então abrimos a versão web.
+            window.open("https://open.spotify.com/", "_blank");
+        }, 1000); 
+
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                clearTimeout(fallbackTimer);
+                document.removeEventListener("visibilitychange", handleVisibilityChange);
+            }
+        };
+
+        document.addEventListener("visibilitychange", handleVisibilityChange);
+    };
+
+
+    const nextTrack = () => {
+        STATE.music.currentIndex = (STATE.music.currentIndex + 1) % STATE.music.playlist.length;
+        updateMusicWidget();
+    };
+
+    const prevTrack = () => {
+        STATE.music.currentIndex = (STATE.music.currentIndex - 1 + STATE.music.playlist.length) % STATE.music.playlist.length;
+        updateMusicWidget();
+    };
+
+        const startNotificationCarousel = () => {
+        const track = document.getElementById('notification-carousel-track');
+        if (!track) return;
+        const upcomingReminders=(STATE.carProfile.appData.reminders||[]).filter(r=>!r.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
+        if(upcomingReminders.length===0){track.innerHTML=`<span class="notification-item text-gray-400 text-sm italic">Nenhum lembrete pendente.</span>`; track.style.animation = 'none'; return}
+        const itemsHTML=upcomingReminders.map(r=>{const isPast=new Date(r.date)<new Date();const color=isPast?'text-red-400':'text-amber-400';const dateStr=new Date(r.date).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',timeZone:'UTC'});return`<span class="notification-item text-sm ${color}"><svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z" clip-rule="evenodd" /></svg><strong>${r.title}</strong> (${dateStr})</span>`}).join('');
+        track.innerHTML=itemsHTML+itemsHTML;
+        const styleId='carousel-style';
+        let styleSheet=document.getElementById(styleId);
+        if(styleSheet)styleSheet.remove();
+        const totalWidth=track.scrollWidth/2;
+        
+        const duration = totalWidth / 25; 
+        
+        styleSheet=document.createElement('style');styleSheet.id=styleId;styleSheet.innerHTML=`@keyframes scroll-horizontal { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } } #notification-carousel-track { display: inline-block; animation: scroll-horizontal ${duration}s linear infinite; padding-right: 2rem; } #notification-carousel-track:hover { animation-play-state: paused; } .notification-item { display: inline-flex; align-items: center; gap: 0.5rem; padding-right: 1.5rem; }`;document.head.appendChild(styleSheet);
+    };
+
+
+    const openVehicleModal=()=>{
+        const modalContent=`<div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <h2 class="text-xl font-bold mb-5 text-white">Editar Veículo</h2>
+            <form id="modal-form" class="max-h-[70vh] overflow-y-auto pr-2">
+                <div class="space-y-4">
+                    <div><label for="nickname" class="text-sm font-medium text-gray-300 block mb-1">Apelido</label><input type="text" id="nickname" value="${STATE.carProfile.nickname}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="plate" class="text-sm font-medium text-gray-300 block mb-1">Placa</label><input type="text" id="plate" value="${STATE.carProfile.plate}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="photo" class="text-sm font-medium text-gray-300 block mb-1">URL da Foto ou PDF</label><input type="url" id="photo" placeholder="https://..." value="${STATE.carProfile.photo||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="brand" class="text-sm font-medium text-gray-300 block mb-1">Marca</label><input type="text" id="brand" value="${STATE.carProfile.brand||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="model" class="text-sm font-medium text-gray-300 block mb-1">Modelo</label><input type="text" id="model" value="${STATE.carProfile.model||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label for="year" class="text-sm font-medium text-gray-300 block mb-1">Ano</label><input type="number" id="year" value="${STATE.carProfile.year||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                        <div><label for="color" class="text-sm font-medium text-gray-300 block mb-1">Cor</label><input type="text" id="color" value="${STATE.carProfile.color||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    </div>
+                    <div class="border-t border-gray-700 my-4"></div>
+                    <div><label for="engineOil" class="text-sm font-medium text-gray-300 block mb-1">Óleo do Motor</label><input type="text" id="engineOil" value="${STATE.carProfile.engineOil||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="brakeFluid" class="text-sm font-medium text-gray-300 block mb-1">Óleo do Freio</label><input type="text" id="brakeFluid" value="${STATE.carProfile.brakeFluid||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="steeringFluid" class="text-sm font-medium text-gray-300 block mb-1">Óleo da Direção</label><input type="text" id="steeringFluid" value="${STATE.carProfile.steeringFluid||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div><label for="radiatorCoolant" class="text-sm font-medium text-gray-300 block mb-1">Água do Radiador</label><input type="text" id="radiatorCoolant" value="${STATE.carProfile.radiatorCoolant||''}" class="w-full bg-gray-800 border border-gray-600 rounded-md px-3 py-2 text-white focus:ring-teal-500 focus:border-teal-500"></div>
+                    <div class="border-t border-gray-700 my-4"></div>
+                    <h3 class="text-md font-bold text-white">Informações Adicionais</h3>
+                    <div id="custom-fields-container" class="space-y-3"></div>
+                    <button type="button" id="add-custom-field-btn" class="w-full mt-2 bg-blue-600/50 hover:bg-blue-500 text-white font-bold py-2 rounded-lg text-sm transition-colors">+ Adicionar Campo</button>
+                </div>
+                <div class="flex gap-2 mt-6">
+                    <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">Salvar</button>
+                </div>
+            </form>
+        </div>`;
+        UI.genericModal.innerHTML=modalContent;
+        UI.genericModal.classList.remove('hidden');
+
+        const customFieldsContainer = document.getElementById('custom-fields-container');
+        const addCustomField = (label = '', value = '') => {
+            const fieldId = `custom_${Date.now()}`;
+            const newField = document.createElement('div');
+            newField.className = 'flex items-center gap-2 custom-field-entry';
+            newField.innerHTML = `
+                <input type="text" placeholder="Nome do Campo" value="${label}" class="custom-field-label w-1/3 bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white focus:ring-teal-500 focus:border-teal-500 text-sm">
+                <input type="text" placeholder="Valor" value="${value}" class="custom-field-value flex-grow bg-gray-700 border border-gray-600 rounded-md px-2 py-1 text-white focus:ring-teal-500 focus:border-teal-500 text-sm">
+                <button type="button" class="remove-custom-field-btn text-red-500 hover:text-red-400">×</button>
+            `;
+            customFieldsContainer.appendChild(newField);
+            newField.querySelector('.remove-custom-field-btn').onclick = (e) => e.target.parentElement.remove();
+        };
+
+        (STATE.carProfile.customInfo || []).forEach(info => addCustomField(info.label, info.value));
+        document.getElementById('add-custom-field-btn').onclick = () => addCustomField();
+        document.getElementById('modal-close-btn').onclick=()=>UI.genericModal.classList.add('hidden');
+        document.getElementById('modal-form').onsubmit=e=>{
+            e.preventDefault();
+            STATE.carProfile.nickname=document.getElementById('nickname').value;
+            STATE.carProfile.plate=document.getElementById('plate').value;
+            STATE.carProfile.photo=document.getElementById('photo').value;
+            STATE.carProfile.brand=document.getElementById('brand').value;
+            STATE.carProfile.model=document.getElementById('model').value;
+            STATE.carProfile.year=parseInt(document.getElementById('year').value)||null;
+            STATE.carProfile.color=document.getElementById('color').value;
+            STATE.carProfile.engineOil=document.getElementById('engineOil').value;
+            STATE.carProfile.brakeFluid=document.getElementById('brakeFluid').value;
+            STATE.carProfile.steeringFluid=document.getElementById('steeringFluid').value;
+            STATE.carProfile.radiatorCoolant=document.getElementById('radiatorCoolant').value;
+            const newCustomInfo = [];
+            document.querySelectorAll('.custom-field-entry').forEach(entry => {
+                const label = entry.querySelector('.custom-field-label').value.trim();
+                const value = entry.querySelector('.custom-field-value').value.trim();
+                if(label && value) {
+                    newCustomInfo.push({ label, value });
+                }
+            });
+            STATE.carProfile.customInfo = newCustomInfo;
+            saveProfile();
+            UI.genericModal.classList.add('hidden');
+        };
+    };
+    
+    const saveProfile = async () => {
+        await DB.set('carProfile', STATE.carProfile);
+        renderUI();
+    };
+    
+    const startTrip = () => {
+        if (!navigator.geolocation) {
+            alert("Geolocalização não é suportada pelo seu navegador.");
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(position => {
+            STATE.trip.isActive = true;
+            STATE.trip.lastPosition = position;
+            document.getElementById('start-routine-btn').textContent = "Rotina em Andamento...";
+            STATE.trip.watchId = navigator.geolocation.watchPosition(updatePosition, handleGeoError, {
+                enableHighAccuracy: true,
+                maximumAge: 1000,
+                timeout: 5000
+            });
+        }, handleGeoError);
+    };
+    
+    const stopTrip = async () => {
+        if (STATE.trip.watchId) navigator.geolocation.clearWatch(STATE.trip.watchId);
+        STATE.trip.isActive = false;
+        STATE.trip.watchId = null;
+        STATE.trip.lastPosition = null;
+        document.getElementById('speedometer-value').textContent = '0';
+        document.getElementById('start-routine-btn').textContent = "Iniciar Rotina";
+        await DB.set('dailyDistance', STATE.trip.dailyDistance);
+    };
+    
+    const updatePosition = position => {
+        const speed = position.coords.speed ? (position.coords.speed * 3.6).toFixed(0) : '0';
+        document.getElementById('speedometer-value').textContent = speed;
+        if (STATE.trip.lastPosition) {
+            const distance = haversineDistance(STATE.trip.lastPosition.coords, position.coords);
+            STATE.trip.dailyDistance.distance += distance;
+            document.getElementById('daily-distance-value').textContent = (STATE.trip.dailyDistance.distance / 1000).toFixed(2);
+        }
+        STATE.trip.lastPosition = position;
+    };
+
+    const handleGeoError = error => {
+        let message = "Ocorreu um erro ao obter a localização.";
+        switch (error.code) {
+            case error.PERMISSION_DENIED:
+                message = "Permissão para geolocalização negada.";
+                break;
+            case error.POSITION_UNAVAILABLE:
+                message = "Informação de localização indisponível.";
+                break;
+            case error.TIMEOUT:
+                message = "A requisição de geolocalização expirou.";
+                break;
+        }
+        alert(message);
+        if (STATE.trip.isActive) stopTrip();
+    };
+
+    const haversineDistance = (coords1, coords2) => {
+        const toRad = x => x * Math.PI / 180;
+        const R = 6371e3;
+        const dLat = toRad(coords2.latitude - coords1.latitude);
+        const dLon = toRad(coords2.longitude - coords1.longitude);
+        const lat1 = toRad(coords1.latitude);
+        const lat2 = toRad(coords2.latitude);
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    };
+    
+    const toggleReminder = async id => {
+        const reminder = STATE.carProfile.appData.reminders.find(r => r.id === id);
+        if (reminder) {
+            reminder.done = !reminder.done;
+            await saveProfile();
+            renderPage('lembretes');
+            startNotificationCarousel();
+        }
+    };
+
+    const initApp = async () => {
+        UI.navBar.querySelectorAll('.nav-btn').forEach(btn => btn.onclick = () => navigateTo(btn.dataset.page));
+        UI.headerCarPhoto.onclick = () => {
+            const photoUrl = STATE.carProfile.photo;
+            if (photoUrl) {
+                openDocumentUrl(photoUrl);
+            } else {
+                openVehicleModal();
+            }
+        };
+
+        try {
+            await DB.init();
+            const savedProfile = await DB.get('carProfile');
+            if (savedProfile) {
+                STATE.carProfile = { 
+                    ...JSON.parse(JSON.stringify(DEFAULT_PROFILE)), 
+                    ...savedProfile,
+                    appData: {
+                        ...JSON.parse(JSON.stringify(DEFAULT_PROFILE.appData)),
+                        ...savedProfile.appData
+                    }
+                };
+            }
+            const todayStr = new Date().toISOString().split('T')[0];
+            const storedDistance = await DB.get('dailyDistance');
+            if (storedDistance && storedDistance.date === todayStr) {
+                STATE.trip.dailyDistance = storedDistance;
+            } else {
+                STATE.trip.dailyDistance = { date: todayStr, distance: 0 };
+                await DB.set('dailyDistance', STATE.trip.dailyDistance);
+            }
+        } catch (error) {
+            console.error("DB falhou, usando dados padrão:", error);
+        } finally {
+            renderUI();
+            navigateTo(STATE.currentPage);
+        }
+    };
+    
+    initApp();
+});
+</script>
+
+</body>
+</html>
+
