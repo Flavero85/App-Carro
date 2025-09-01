@@ -1203,7 +1203,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const openGoogleHome = () => {
     try {
-        window.location.href = "googlehome://";
+        window.location.href = "intent://launch/#Intent;package=com.google.android.apps.chromecast.app;end";
+
     } catch (e) {
         console.error("Erro ao abrir Google Home:", e);
         showToast("Não foi possível abrir o Google Home.", "error");
@@ -1277,7 +1278,8 @@ const openSpotify = (spotifyUrl) => {
         
         // --- CÓDIGO REVERTIDO PARA A OPÇÃO NATIVA ---
         document.getElementById('routine-step2-home').onclick = () => {
-    window.location.href = "googlehome://";
+    window.location.href = "intent://launch/#Intent;package=com.google.android.apps.chromecast.app;end";
+
 };
 
         
