@@ -1,42 +1,63 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Meu Paliozera</title>
-  <meta name="description" content="A central de comando para gerenciar seu carro.">
-  <meta name="theme-color" content="#111827"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    
+    <title>Meu Carro Pro</title>
+    
+    <meta name="description" content="A central de comando para gerenciar seu carro.">
+    <meta name="theme-color" content="#111827"/>
+    <!-- Caminho do ícone atualizado -->
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    <!-- Link para o arquivo manifest.json externo -->
+    <link rel="manifest" href="manifest.json">
 
-  <!-- Ícone -->
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
-  <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background: linear-gradient(-45deg, #111827, #1f2937, #374151, #111827); background-size: 400% 400%; animation: gradientBG 15s ease infinite; }
+        @keyframes gradientBG { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+        
+        .glassmorphism { 
+            background: rgba(31, 41, 55, 0.8); 
+            backdrop-filter: blur(12px); 
+            -webkit-backdrop-filter: blur(12px); 
+            border: 1px solid rgba(255, 255, 255, 0.1); 
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+        
+        .page { width: 100%; transition: opacity 0.3s ease; }
+        .page.hidden { display: none; }
+        
+        .animate-fade-in-up { animation: fadeInUp 0.3s ease-out forwards; }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 9999px;
+            color: white;
+            z-index: 100;
+            font-weight: 500;
+            opacity: 0;
+            transition: opacity 0.3s, top 0.3s;
+            animation: slideDown 0.3s forwards;
+        }
+        @keyframes slideDown { from { top: -50px; opacity: 0; } to { top: 20px; opacity: 1; } }
 
-  <!-- Tailwind -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Registro do Service Worker -->
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js")
-        .then(() => console.log("Service Worker registrado!"))
-        .catch(err => console.error("Erro ao registrar Service Worker:", err));
-    }
-  </script>
-
-  <style>
-    body {
-      background: linear-gradient(-45deg, #111827, #1f2937, #374151, #111827);
-      background-size: 400% 400%;
-      animation: gradientBG 15s ease infinite;
-    }
-    @keyframes gradientBG {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
-    }
-  </style>
+        .text-glow {
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6), 0 0 20px rgba(0, 229, 255, 0.4);
+        }
+        .icon-glow {
+            filter: drop-shadow(0 0 6px rgba(0, 229, 255, 0.7));
+        }
+    </style>
 </head>
-<body class="bg-gray-900 text-gray-200 font-sans antialiased">    <div id="toast-container" class="fixed bottom-4 right-4 z-[100]"></div>
+<body class="bg-gray-900 text-gray-200 font-sans antialiased">
+    <div id="toast-container"></div>
 
     <header id="main-header" class="glassmorphism shadow-lg sticky top-0 z-20">
         <div class="p-3 flex items-center justify-between gap-4 h-[72px]">
@@ -73,16 +94,27 @@
     </main>
 
     <div id="generic-modal" class="fixed inset-0 z-50 hidden bg-black/70 flex items-center justify-center p-4"></div>
-<footer>
-        <p>Desenvolvido por Flavio Rafael</p>
-        <a href="https://www.flavioitech.com" target="_blank"><i data-lucide="github"></i><span>Ver Site</span></a>
-    </footer>
+
+<script>
+    // Registro do Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./service-worker.js')
+                .then(registration => {
+                    console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+                })
+                .catch(error => {
+                    console.log('Falha ao registrar o ServiceWorker: ', error);
+                });
+        });
+    }
+</script>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // ... (toda a configuração inicial, DEFAULT_PROFILE, STATE, UI, DB, etc. continua igual) ...
-    const DEFAULT_PHOTO_URL = 'https://placehold.co/192x192/374151/FFFFFF?text=CAR&font=sans-serif';
-    const PDF_ICON_URL = 'https://placehold.co/192x192/ef4444/FFFFFF?text=PDF';
+    // Caminhos das imagens padrão atualizados
+    const DEFAULT_PHOTO_URL = 'icons/default-car.png';
+    const PDF_ICON_URL = 'icons/pdf-icon.png';
     const DEFAULT_PROFILE = {
         nickname: 'Meu Carro',
         plate: 'ABC-1234',
@@ -103,9 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 { id: 3, title: 'Pagar IPVA', date: new Date(Date.now() - 10 * 24*60*60*1000).toISOString().split('T')[0], done: true },
             ],
             logbook: [],
+            // Caminhos dos documentos padrão atualizados
             documents: [
-                { id: 'crlv', title: 'Documento do Veículo (CRLV)', url: 'https://placehold.co/300x425/ffffff/111827?text=Frente+CRLV-e', category: 'Principal' },
-                { id: 'cnh', title: 'Carteira de Habilitação (CNH)', url: 'https://placehold.co/300x425/ffffff/111827?text=Frente+CNH', category: 'Principal' }
+                { id: 'crlv', title: 'Documento do Veículo (CRLV)', url: 'icons/doc-crlv.png', category: 'Principal' },
+                { id: 'cnh', title: 'Carteira de Habilitação (CNH)', url: 'icons/doc-cnh.png', category: 'Principal' }
             ],
              checklist: [
                 { id: 1, text: 'Nível do Óleo do Motor', checked: false },
@@ -134,10 +167,11 @@ document.addEventListener('DOMContentLoaded', () => {
         carProfile: JSON.parse(JSON.stringify(DEFAULT_PROFILE)),
         trip: { isActive: false, watchId: null, lastPosition: null, dailyDistance: { date: null, distance: 0 } },
         music: {
+             // Caminhos das artes de música atualizados
             playlist: [
-                { title: 'Highway to Hell', artist: 'AC/DC', art: 'https://placehold.co/128x128/ef4444/FFFFFF?text=AC/DC', spotifyUrl: 'https://open.spotify.com/track/29UPCUS0V4bfcFw6s1V2T8' },
-                { title: 'Bohemian Rhapsody', artist: 'Queen', art: 'https://placehold.co/128x128/7c3aed/FFFFFF?text=QUEEN', spotifyUrl: 'https://open.spotify.com/track/4u7EnebtmKWzANvKgiJJEc' },
-                { title: 'Smells Like Teen Spirit', artist: 'Nirvana', art: 'https://placehold.co/128x128/f59e0b/FFFFFF?text=NIRVANA', spotifyUrl: 'https://open.spotify.com/track/5ghIJDpPoe3CfHMGu71E6T' },
+                { title: 'Highway to Hell', artist: 'AC/DC', art: 'icons/music-acdc.png', spotifyUrl: 'https://open.spotify.com/track/29UPCUS0V4bfcFw6s1V2T8' },
+                { title: 'Bohemian Rhapsody', artist: 'Queen', art: 'icons/music-queen.png', spotifyUrl: 'https://open.spotify.com/track/4u7EnebtmKWzANvKgiJJEc' },
+                { title: 'Smells Like Teen Spirit', artist: 'Nirvana', art: 'icons/music-nirvana.png', spotifyUrl: 'https://open.spotify.com/track/5ghIJDpPoe3CfHMGu71E6T' },
             ],
             currentIndex: 0,
         }
@@ -176,23 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
         })
     };
 
-    const showToast = (message, type = 'success') => {
-        const container = document.getElementById('toast-container');
-        if (!container) return;
-        const toast = document.createElement('div');
-        const bgColor = type === 'error' ? 'bg-red-600' : 'bg-teal-500';
-        toast.className = `p-3 mb-3 ${bgColor} text-white rounded-lg shadow-lg transition-all duration-500 transform opacity-0 translate-y-4`;
-        toast.textContent = message;
-        container.appendChild(toast);
-        setTimeout(() => {
-            toast.classList.remove('opacity-0', 'translate-y-4');
-        }, 10);
-        setTimeout(() => {
-            toast.classList.add('opacity-0', 'translate-y-4');
-            toast.addEventListener('transitionend', () => toast.remove());
-        }, 3000);
-    };
-
     const renderPage = (pageId) => {
         const pageContainer = UI.pages[pageId];
         if (!pageContainer) return;
@@ -207,16 +224,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 content = `
                     <div class="space-y-4">
-                         <div class="grid grid-cols-2 gap-4">
-                            <button id="google-home-btn" class="bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg p-3 rounded-lg flex items-center justify-center text-white font-semibold transition-transform active:scale-95 text-sm">
-                                <svg class="w-5 h-5 mr-2 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                Google Home
-                            </button>
-                            <button id="routines-btn" class="bg-gradient-to-r from-purple-500 to-violet-600 shadow-lg p-3 rounded-lg flex items-center justify-center text-white font-semibold transition-transform active:scale-95 text-sm">
-                                <svg class="w-5 h-5 mr-2 icon-glow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                Rotinas
-                            </button>
-                        </div>
+                        <button id="open-google-home-btn" class="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold py-4 rounded-lg text-xl active:scale-95 shadow-lg transition-all text-glow flex items-center justify-center gap-3">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 icon-glow" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3L2 12h3v8h5z"></path></svg>
+                            <span>Abrir Google Home</span>
+                        </button>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="glassmorphism p-4 rounded-xl space-y-3">
                                 <h3 class="font-semibold text-gray-300">Navegação Rápida</h3>
@@ -394,7 +405,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="glassmorphism p-3 rounded-lg flex items-center justify-between gap-3">
                                     <p class="font-semibold">${doc.title}</p>
                                     <div class="flex-shrink-0 flex gap-2">
-                                        <button class="doc-view-btn" data-url="${doc.url}"><svg class="w-6 h-6 text-gray-400 hover:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg></button>
+                                        <button class="doc-view-btn" data-url="${doc.url}"><svg class="w-6 h-6 text-gray-400 hover:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542 7z"></path></svg></button>
                                         <button class="edit-doc-btn" data-id="${doc.id}"><svg class="w-5 h-5 text-gray-400 hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.536l12.232-12.232z"></path></svg></button>
                                         <button class="delete-doc-btn" data-id="${doc.id}"><svg class="w-5 h-5 text-gray-400 hover:text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg></button>
                                     </div>
@@ -494,14 +505,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 break;
 
             default:
-                content = `<div class="bg-gray-800 border border-gray-700 rounded-xl p-8 text-center"><p class="text-gray-400">Página de <span class="font-bold text-white">${pageId}</span> em construção.</p></div>`;
+                content = `<div class="glassmorphism rounded-xl p-8 text-center"><p class="text-gray-400">Página de <span class="font-bold text-white">${pageId}</span> em construção.</p></div>`;
                 break;
         }
         pageContainer.innerHTML = content;
 
         if (pageId === 'dashboard') {
-            document.getElementById('google-home-btn').onclick = openGoogleHome;
-            document.getElementById('routines-btn').onclick = openRoutines;
+            document.getElementById('open-google-home-btn').onclick = openGoogleHome;
             document.getElementById('nav-start-btn').onclick = startNavigation;
             document.getElementById('music-play-spotify-btn').onclick = playOnSpotify;
             document.getElementById('music-next-btn').onclick = nextTrack;
@@ -592,7 +602,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const displayUrl = getDisplayableUrl(url);
         if (isPdfUrl(url)) {
              const modalContent = `
-                <div class="bg-gray-800 border border-gray-700 rounded-xl p-2 w-full max-w-2xl h-[85vh] animate-fade-in-up relative flex flex-col">
+                <div class="glassmorphism rounded-xl p-2 w-full max-w-2xl h-[85vh] animate-fade-in-up relative flex flex-col">
                     <iframe src="${displayUrl}" class="w-full h-full rounded-lg" frameborder="0"></iframe>
                     <button id="modal-close-btn" class="absolute top-2 right-2 bg-gray-900/50 text-white rounded-full w-8 h-8 flex items-center justify-center">×</button>
                 </div>`;
@@ -601,7 +611,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('modal-close-btn').onclick = () => UI.genericModal.classList.add('hidden');
         } else if (/\.(jpeg|jpg|gif|png|webp)$/i.test(url)) {
             const modalContent = `
-                <div class="bg-gray-800 border border-gray-700 rounded-xl p-2 w-full max-w-lg animate-fade-in-up relative">
+                <div class="glassmorphism rounded-xl p-2 w-full max-w-lg animate-fade-in-up relative">
                     <img src="${displayUrl}" class="w-full h-auto rounded-lg object-contain max-h-[80vh]">
                     <button id="modal-close-btn" class="absolute top-2 right-2 bg-gray-900/50 text-white rounded-full w-8 h-8 flex items-center justify-center">×</button>
                 </div>`;
@@ -623,7 +633,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = isEditing ? doc.url : '';
         const category = isEditing ? doc.category : '';
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Documento</h2>
                 <form id="modal-form">
                     <div class="space-y-4">
@@ -697,14 +707,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- REMINDER CRUD FUNCTIONS ---
     const openReminderModal = (id = null) => {
         const isEditing = id !== null;
         const reminder = isEditing ? STATE.carProfile.appData.reminders.find(r => r.id === id) : {};
         const title = isEditing ? reminder.title : '';
         const date = isEditing ? reminder.date : new Date().toISOString().split('T')[0];
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Lembrete</h2>
                 <form id="modal-form">
                     <div class="space-y-4">
@@ -769,14 +778,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- [NOVO] CHECKLIST CRUD FUNCTIONS ---
     const openChecklistItemModal = (id = null) => {
         const isEditing = id !== null;
         const item = isEditing ? STATE.carProfile.appData.checklist.find(i => i.id === id) : {};
         const text = isEditing ? item.text : '';
 
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Novo'} Item do Checklist</h2>
                 <form id="modal-form">
                     <label for="checklist-text" class="text-sm font-medium text-gray-300 block mb-1">Descrição do Item</label>
@@ -849,7 +857,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // --- [NOVO] EXPENSE CRUD FUNCTIONS ---
     const openExpenseModal = (id = null) => {
         const isEditing = id !== null;
         const expense = isEditing ? STATE.carProfile.appData.expenses.find(e => e.id === id) : {};
@@ -860,7 +867,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const expenseTypes = ['Combustível', 'Manutenção', 'Impostos', 'Seguro', 'Limpeza', 'Acessórios', 'Outros'];
 
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">${isEditing ? 'Editar' : 'Nova'} Despesa</h2>
                 <form id="modal-form" class="space-y-4">
                     <div>
@@ -960,7 +967,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } = options;
 
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up text-center">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up text-center">
                 <p class="text-white mb-6">${message}</p>
                 <div class="flex gap-2 mt-6">
                     <button type="button" id="modal-close-btn" class="flex-1 bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">${cancelText}</button>
@@ -982,7 +989,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
 
-    // --- OTHER MODAL & SAVE FUNCTIONS ---
     const openCarInfoModal = () => {
         const { nickname, plate, brand, model, year, color, engineOil, brakeFluid, steeringFluid, radiatorCoolant, customInfo } = STATE.carProfile;
         let customInfoHTML = '';
@@ -991,7 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
             customInfoHTML += customInfo.map(info => `<p><span class="font-semibold text-gray-400">${info.label}:</span> <span class="text-white">${info.value}</span></p>`).join('');
         }
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-4 text-white">Informações do Veículo</h2>
                 <div class="space-y-2 mt-4 text-left max-h-[60vh] overflow-y-auto pr-2">
                     <p><span class="font-semibold text-gray-400">Apelido:</span> <span class="text-white">${nickname}</span></p>
@@ -1021,7 +1027,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openTireModal = () => {
         const { tires } = STATE.carProfile.appData;
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">Editar Calibragem (PSI)</h2>
                 <form id="modal-form">
                     <div class="grid grid-cols-2 gap-4">
@@ -1066,7 +1072,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openEngineTempModal = () => {
         const { engineTemp } = STATE.carProfile.appData;
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">Editar Temperatura do Motor</h2>
                 <form id="modal-form">
                     <label for="engine-temp" class="text-sm font-medium text-gray-300 block mb-1">Temperatura (°C)</label>
@@ -1092,7 +1098,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const openFuelLevelModal = () => {
         const { fuelLevel } = STATE.carProfile.appData;
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">Editar Nível do Combustível</h2>
                 <form id="modal-form">
                     <label for="fuel-level" class="text-sm font-medium text-gray-300 block mb-1">Nível do Tanque (%)</label>
@@ -1117,7 +1123,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
    const openLogbookEntryModal = () => {
         const modalContent = `
-            <div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+            <div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
                 <h2 class="text-xl font-bold mb-5 text-white">Adicionar Registro ao Diário</h2>
                 <form id="modal-form" class="space-y-4">
                     <div>
@@ -1230,39 +1236,24 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const openGoogleHome = () => {
-        const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app');
-        const intentUrl = `intent://launch/#Intent;package=com.google.android.apps.chromecast.app;S.browser_fallback_url=${fallbackUrl};end`;
-        window.location.href = intentUrl;
+        window.location.href = "intent://#Intent;package=com.google.android.apps.chromecast.app;S.browser_fallback_url=https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app&hl=pt&gl=BR;end";
     };
 
-    const openRoutines = () => {
-        const fallbackUrl = encodeURIComponent('https://play.google.com/store/apps/details?id=com.google.android.apps.chromecast.app');
-        const intentUrl = `intent://launch/#Intent;package=com.google.android.apps.chromecast.app;S.browser_fallback_url=${fallbackUrl};end`;
-        window.location.href = intentUrl;
-        showToast('Abra a seção "Rotinas" no Google Home.', 'success');
-    };
-
-    // Abre o Spotify (usando URL da playlist/música)
-    const openSpotify = (spotifyUrl) => {
+    const requestBluetoothConnection = async () => {
+        if (!navigator.bluetooth) {
+            console.log('Bluetooth não é compatível com este navegador.');
+            return;
+        }
         try {
-            if (!spotifyUrl) {
-                showToast("Nenhuma música/playlist configurada.", "error");
-                return;
-            }
-
-            // Converte URL web para esquema nativo do app
-            if (spotifyUrl.startsWith("https://open.spotify.com/")) {
-                const uri = spotifyUrl.replace("https://open.spotify.com/", "spotify:");
-                window.location.href = uri;
-            } else {
-                window.location.href = spotifyUrl;
-            }
-        } catch (e) {
-            console.error("Erro ao abrir Spotify:", e);
-            showToast("Não foi possível abrir o Spotify.", "error");
+            const device = await navigator.bluetooth.requestDevice({
+                acceptAllDevices: true,
+                optionalServices: ['generic_access']
+            });
+            showToast(`Conectado a: ${device.name}`);
+        } catch (error) {
+            showToast('Conexão Bluetooth falhou ou foi cancelada.', 'error');
         }
     };
-
     
     const navigateTo = (pageId) => {
         if (STATE.trip.isActive && pageId !== 'dashboard') {
@@ -1311,24 +1302,17 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('music-artist').textContent = track.artist;
     };
 
-        const playOnSpotify = () => {
-        // Tenta abrir o app nativo do Spotify
+    const playOnSpotify = () => {
         window.location.href = "spotify://";
-
-        // Cria um timer para abrir o site como alternativa (fallback)
         const fallbackTimer = setTimeout(() => {
-            // Se este código for executado, significa que o app não abriu,
-            // então abrimos a versão web.
             window.open("https://open.spotify.com/", "_blank");
-        }, 1000); 
-
+        }, 1000);
         const handleVisibilityChange = () => {
             if (document.hidden) {
                 clearTimeout(fallbackTimer);
                 document.removeEventListener("visibilitychange", handleVisibilityChange);
             }
         };
-
         document.addEventListener("visibilitychange", handleVisibilityChange);
     };
 
@@ -1343,7 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateMusicWidget();
     };
 
-        const startNotificationCarousel = () => {
+    const startNotificationCarousel = () => {
         const track = document.getElementById('notification-carousel-track');
         if (!track) return;
         const upcomingReminders=(STATE.carProfile.appData.reminders||[]).filter(r=>!r.done).sort((a,b)=>new Date(a.date)-new Date(b.date));
@@ -1354,15 +1338,13 @@ document.addEventListener('DOMContentLoaded', () => {
         let styleSheet=document.getElementById(styleId);
         if(styleSheet)styleSheet.remove();
         const totalWidth=track.scrollWidth/2;
-        
         const duration = totalWidth / 25; 
-        
         styleSheet=document.createElement('style');styleSheet.id=styleId;styleSheet.innerHTML=`@keyframes scroll-horizontal { 0% { transform: translateX(0%); } 100% { transform: translateX(-50%); } } #notification-carousel-track { display: inline-block; animation: scroll-horizontal ${duration}s linear infinite; padding-right: 2rem; } #notification-carousel-track:hover { animation-play-state: paused; } .notification-item { display: inline-flex; align-items: center; gap: 0.5rem; padding-right: 1.5rem; }`;document.head.appendChild(styleSheet);
     };
 
 
     const openVehicleModal=()=>{
-        const modalContent=`<div class="bg-gray-800 border border-gray-700 rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
+        const modalContent=`<div class="glassmorphism rounded-xl p-5 w-full max-w-sm animate-fade-in-up">
             <h2 class="text-xl font-bold mb-5 text-white">Editar Veículo</h2>
             <form id="modal-form" class="max-h-[70vh] overflow-y-auto pr-2">
                 <div class="space-y-4">
